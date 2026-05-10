@@ -1,6 +1,7 @@
-aiogram==3.10.0
-httpx
-fastapi
-uvicorn
-python-dotenv
-pydantic
+fastapi==0.110.0
+pydantic==2.6.3
+pydantic-core==2.16.3
+uvicorn==0.27.1
+httpx==0.27.0
+aiogram==3.4.1
+python-dotenv==1.0.1
