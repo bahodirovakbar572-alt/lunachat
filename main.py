@@ -25,7 +25,7 @@ load_dotenv()
 
 BOT_TOKEN          = os.getenv("BOT_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-CHANNEL_USERNAME   = os.getenv("CHANNEL_USERNAME", "@sizning_kanalingiz")
+CHANNEL_USERNAME   = os.getenv("CHANNEL_USERNAME", "@infortxluna")
 
 TEXT_MODEL   = "openai/gpt-oss-120b:free"
 VISION_MODEL = "nvidia/nemotron-nano-12b-v2-vl:free"
