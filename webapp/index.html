@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Luna AI</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --tg-theme-bg-color: #212121;
+    --tg-theme-secondary-bg-color: #181818;
+    --tg-theme-text-color: #ffffff;
+    --tg-theme-hint-color: #aaaaaa;
+    --tg-theme-button-color: #8774e1;
+    --tg-theme-button-text-color: #ffffff;
+    --tg-theme-header-bg-color: #212121;
+    --tg-theme-section-bg-color: #2b2b2b;
+    --tg-theme-destructive-text-color: #ff595a;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+  }
+
+  .app { height:100%; display:flex; flex-direction:column; }
+
+  /* Header */
+  .hdr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    background: var(--tg-theme-header-bg-color);
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .hdr-av {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--tg-theme-button-color);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; flex-shrink: 0;
+  }
+
+  .hdr-name { font-size:16px; font-weight:600; }
+  .hdr-status {
+    font-size:12px; color:var(--tg-theme-hint-color);
+    display:flex; align-items:center; gap:4px; margin-top:2px;
+  }
+
+  .dot {
+    width:6px; height:6px; border-radius:50%;
+    background:#4cd964; box-shadow:0 0 5px #4cd964;
+    animation:blink 2s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* Messages */
+  #msgs {
+    flex:1; overflow-y:auto; overflow-x:hidden;
+    padding: 10px 0;
+    display:flex; flex-direction:column;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+  }
+  #msgs::-webkit-scrollbar { display:none; }
+
+  /* Welcome */
+  .welcome {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:32px 24px; gap:10px; text-align:center;
+    min-height:55vh;
+  }
+
+  .w-av {
+    width:78px; height:78px; border-radius:50%;
+    background:var(--tg-theme-button-color);
+    display:flex; align-items:center; justify-content:center;
+    font-size:34px; margin-bottom:6px;
+  }
+
+  .welcome h3 { font-size:20px; font-weight:700; }
+  .welcome p { font-size:14px; color:var(--tg-theme-hint-color); line-height:1.5; max-width:260px; }
+
+  .sugs { display:flex; flex-direction:column; gap:8px; width:100%; max-width:300px; margin-top:14px; }
+
+  .sug {
+    display:flex; align-items:center; gap:10px;
+    padding:11px 14px;
+    background:var(--tg-theme-section-bg-color);
+    border:none; border-radius:12px;
+    color:var(--tg-theme-text-color);
+    font-family:inherit; font-size:14px;
+    text-align:left; cursor:pointer;
+    transition:opacity 0.15s;
+  }
+  .sug:active { opacity:0.6; }
+  .sug-ic { font-size:18px; flex-shrink:0; }
+  .sug-main { font-weight:500; }
+  .sug-sub { font-size:12px; color:var(--tg-theme-hint-color); margin-top:1px; }
+
+  /* Msg wrap */
+  .mw {
+    padding: 2px 10px;
+    display:flex; flex-direction:column;
+    animation: mi 0.2s ease;
+  }
+  @keyframes mi { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .mw.user { align-items:flex-end; }
+  .mw.luna { align-items:flex-start; }
+
+  .mr { display:flex; align-items:flex-end; gap:6px; max-width:85%; }
+
+  .m-av {
+    width:28px; height:28px; border-radius:50%;
+    background:var(--tg-theme-button-color);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; flex-shrink:0;
+  }
+
+  .bub {
+    padding:8px 12px; border-radius:18px;
+    font-size:15px; line-height:1.55;
+    word-break:break-word; max-width:100%;
+  }
+
+  .luna .bub {
+    background:var(--tg-theme-section-bg-color);
+    border-bottom-left-radius:4px;
+  }
+
+  .user .bub {
+    background:var(--tg-theme-button-color);
+    color:var(--tg-theme-button-text-color);
+    border-bottom-right-radius:4px;
+  }
+
+  .bub img { max-width:100%; border-radius:10px; display:block; margin-bottom:4px; }
+
+  .mtime {
+    font-size:11px; color:var(--tg-theme-hint-color);
+    margin-top:3px; padding:0 4px;
+  }
+
+  /* Typing */
+  .typing-bub {
+    background:var(--tg-theme-section-bg-color);
+    border-radius:18px; border-bottom-left-radius:4px;
+    padding:12px 16px;
+    display:flex; gap:4px; align-items:center;
+  }
+  .typing-bub span {
+    width:7px; height:7px; border-radius:50%;
+    background:var(--tg-theme-hint-color);
+    animation:td 1.2s ease-in-out infinite;
+  }
+  .typing-bub span:nth-child(2){animation-delay:0.18s}
+  .typing-bub span:nth-child(3){animation-delay:0.36s}
+  @keyframes td { 0%,60%,100%{transform:scale(1);opacity:0.4} 30%{transform:scale(1.3);opacity:1} }
+
+  .cur {
+    display:inline-block; width:2px; height:14px;
+    background:currentColor; opacity:0.7;
+    margin-left:2px; vertical-align:middle;
+    border-radius:1px;
+    animation:cb 0.9s step-end infinite;
+  }
+  @keyframes cb { 0%,100%{opacity:0.7} 50%{opacity:0} }
+
+  /* Code */
+  .bub code {
+    background:rgba(0,0,0,0.25); padding:1px 5px;
+    border-radius:5px; font-family:monospace; font-size:13px;
+  }
+  .bub pre {
+    background:rgba(0,0,0,0.3); padding:10px;
+    border-radius:10px; overflow-x:auto; margin:6px 0; font-size:12px;
+  }
+  .bub strong { font-weight:700; }
+
+  /* Image preview */
+  #prev-wrap { display:none; padding:6px 16px 0; flex-shrink:0; }
+  .pi { position:relative; display:inline-block; }
+  #prev-img { height:60px; border-radius:10px; display:block; border:1px solid rgba(255,255,255,0.1); }
+  .pdel {
+    position:absolute; top:-6px; right:-6px;
+    width:20px; height:20px;
+    background:var(--tg-theme-destructive-text-color);
+    border-radius:50%; border:none; color:#fff;
+    font-size:11px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Input */
+  .inp-area {
+    background:var(--tg-theme-secondary-bg-color);
+    border-top:0.5px solid rgba(255,255,255,0.08);
+    padding:8px 10px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+    flex-shrink:0;
+  }
+
+  .inp-row { display:flex; align-items:flex-end; gap:6px; }
+
+  .att {
+    width:36px; height:36px; background:transparent; border:none;
+    color:var(--tg-theme-hint-color); font-size:24px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; padding-bottom:2px; transition:opacity 0.15s;
+  }
+  .att:active { opacity:0.5; }
+
+  .txt-box {
+    flex:1; background:var(--tg-theme-bg-color);
+    border-radius:20px; display:flex; align-items:flex-end;
+    padding:8px 12px; gap:6px; min-height:38px;
+  }
+
+  #txt {
+    flex:1; background:transparent; border:none; outline:none;
+    color:var(--tg-theme-text-color); font-family:inherit;
+    font-size:16px; resize:none; max-height:120px;
+    line-height:1.4; padding:0;
+  }
+  #txt::placeholder { color:var(--tg-theme-hint-color); }
+
+  #sendbtn {
+    width:36px; height:36px;
+    background:var(--tg-theme-button-color);
+    border:none; border-radius:50%;
+    color:var(--tg-theme-button-text-color);
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:opacity 0.15s, transform 0.15s;
+  }
+  #sendbtn:active { opacity:0.7; transform:scale(0.92); }
+  #sendbtn:disabled { opacity:0.3; }
+
+  #fi { display:none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <div class="hdr-av">🌙</div>
+    <div>
+      <div class="hdr-name">Luna AI</div>
+      <div class="hdr-status"><div class="dot"></div>online</div>
+    </div>
+  </div>
+
+  <div id="msgs">
+    <div class="welcome" id="welcome">
+      <div class="w-av">🌙</div>
+      <h3>Salom! Men Luna</h3>
+      <p>Sizning aqlli yordamchingizman — savol bering yoki rasm yuboring</p>
+      <div class="sugs">
+        <button class="sug" onclick="sug(this)">
+          <span class="sug-ic">🤔</span>
+          <div><div class="sug-main">Sen kimsan?</div><div class="sug-sub">Luna haqida</div></div>
+        </button>
+        <button class="sug" onclick="sug(this)">
+          <span class="sug-ic">💡</span>
+          <div><div class="sug-main">Qanday yordam bera olasan?</div><div class="sug-sub">Imkoniyatlar</div></div>
+        </button>
+        <button class="sug" onclick="sug(this)">
+          <span class="sug-ic">💻</span>
+          <div><div class="sug-main">Kod yozishda yordam ber</div><div class="sug-sub">Dasturlash</div></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="prev-wrap">
+    <div class="pi">
+      <img id="prev-img" src="" alt="">
+      <button class="pdel" onclick="clearImg()">✕</button>
+    </div>
+  </div>
+
+  <div class="inp-area">
+    <div class="inp-row">
+      <button class="att" onclick="document.getElementById('fi').click()">📎</button>
+      <div class="txt-box">
+        <textarea id="txt" rows="1" placeholder="Xabar..." onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+      </div>
+      <button id="sendbtn" onclick="send()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M22 2L11 13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fi" accept="image/*" onchange="onFile(event)">
+
+<script>
+const API_URL = "https://YOUR_SERVER_URL/chat"; // ← O'zgartiring!
+
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.disableVerticalSwipes?.();
+
+  // Theme ranglarini qo'llash
+  const tp = tg.themeParams || {};
+  const r = document.documentElement.style;
+  const map = {
+    bg_color: '--tg-theme-bg-color',
+    secondary_bg_color: '--tg-theme-secondary-bg-color',
+    text_color: '--tg-theme-text-color',
+    hint_color: '--tg-theme-hint-color',
+    button_color: '--tg-theme-button-color',
+    button_text_color: '--tg-theme-button-text-color',
+    header_bg_color: '--tg-theme-header-bg-color',
+    section_bg_color: '--tg-theme-section-bg-color',
+    destructive_text_color: '--tg-theme-destructive-text-color',
+  };
+  for (const [k, v] of Object.entries(map)) {
+    if (tp[k]) r.setProperty(v, tp[k]);
+  }
+}
+
+let history = [], imgData = null, busy = false;
+
+function now() {
+  return new Date().toLocaleTimeString('uz', {hour:'2-digit', minute:'2-digit'});
+}
+
+function grow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function sug(btn) {
+  document.getElementById('txt').value = btn.querySelector('.sug-main').textContent;
+  send();
+}
+
+function onFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    imgData = ev.target.result;
+    document.getElementById('prev-img').src = imgData;
+    document.getElementById('prev-wrap').style.display = 'block';
+  };
+  r.readAsDataURL(f);
+  e.target.value = '';
+}
+
+function clearImg() {
+  imgData = null;
+  document.getElementById('prev-wrap').style.display = 'none';
+}
+
+function scrollEnd() {
+  const m = document.getElementById('msgs');
+  requestAnimationFrame(() => m.scrollTop = m.scrollHeight);
+}
+
+function rmWelcome() { document.getElementById('welcome')?.remove(); }
+
+function fmt(t) {
+  return t
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function addMsg(who, text, img = null) {
+  rmWelcome();
+  const msgs = document.getElementById('msgs');
+  const wrap = document.createElement('div');
+  wrap.className = `mw ${who}`;
+
+  const row = document.createElement('div');
+  row.className = 'mr';
+
+  if (who === 'luna') {
+    const av = document.createElement('div');
+    av.className = 'm-av'; av.textContent = '🌙';
+    row.appendChild(av);
+  }
+
+  const bub = document.createElement('div');
+  bub.className = 'bub';
+
+  if (img) {
+    const i = document.createElement('img'); i.src = img;
+    bub.appendChild(i);
+    if (text) { const s = document.createElement('span'); s.textContent = text; bub.appendChild(s); }
+  } else {
+    bub.innerHTML = fmt(text);
+  }
+
+  row.appendChild(bub);
+  wrap.appendChild(row);
+
+  const t = document.createElement('div');
+  t.className = 'mtime'; t.textContent = now();
+  wrap.appendChild(t);
+
+  msgs.appendChild(wrap);
+  scrollEnd();
+  return bub;
+}
+
+function addTyping() {
+  rmWelcome();
+  const msgs = document.getElementById('msgs');
+  const wrap = document.createElement('div');
+  wrap.className = 'mw luna'; wrap.id = 'typing';
+  const row = document.createElement('div'); row.className = 'mr';
+  const av = document.createElement('div'); av.className = 'm-av'; av.textContent = '🌙';
+  const bub = document.createElement('div'); bub.className = 'typing-bub';
+  bub.innerHTML = '<span></span><span></span><span></span>';
+  row.appendChild(av); row.appendChild(bub);
+  wrap.appendChild(row); msgs.appendChild(wrap);
+  scrollEnd();
+}
+
+async function send() {
+  if (busy) return;
+  const txt = document.getElementById('txt');
+  const text = txt.value.trim();
+  if (!text && !imgData) return;
+
+  busy = true;
+  document.getElementById('sendbtn').disabled = true;
+  tg?.HapticFeedback?.impactOccurred('light');
+
+  addMsg('user', text, imgData);
+  txt.value = ''; txt.style.height = 'auto';
+
+  const img = imgData; clearImg();
+  addTyping();
+
+  try {
+    const body = { message: text, history: img ? [] : history };
+    if (img) body.image = img;
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    document.getElementById('typing')?.remove();
+
+    if (!res.ok) {
+      addMsg('luna', '❌ Server xatosi. Qayta urinib ko\'ring.');
+      busy = false; document.getElementById('sendbtn').disabled = false;
+      return;
+    }
+
+    const bub = addMsg('luna', '');
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let full = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of dec.decode(value).split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const chunk = line.slice(6);
+        if (chunk === '[DONE]') break;
+        try {
+          const d = JSON.parse(chunk);
+          const delta = d.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            full += delta;
+            bub.innerHTML = fmt(full) + '<span class="cur"></span>';
+            scrollEnd();
+          }
+        } catch {}
+      }
+    }
+
+    bub.innerHTML = fmt(full);
+
+    if (!img) {
+      history.push({ role: 'user', content: text });
+      history.push({ role: 'assistant', content: full });
+      if (history.length > 20) history = history.slice(-20);
+    }
+
+    tg?.HapticFeedback?.notificationOccurred('success');
+
+  } catch (e) {
+    document.getElementById('typing')?.remove();
+    addMsg('luna', '❌ Server bilan bog\'lanib bo\'lmadi.');
+    tg?.HapticFeedback?.notificationOccurred('error');
+  }
+
+  busy = false;
+  document.getElementById('sendbtn').disabled = false;
+}
+</script>
+</body>
+</html>
