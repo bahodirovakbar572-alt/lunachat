@@ -1,0 +1,6 @@
+aiogram==3.10.0
+httpx
+fastapi
+uvicorn
+python-dotenv
+pydantic
